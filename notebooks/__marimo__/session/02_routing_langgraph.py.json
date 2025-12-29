@@ -1,0 +1,34 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.18.4"
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "5f73e7cb31c88970e49cf1c366faeb99",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stderr",
+          "text": "Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.\n",
+          "mimetype": "text/plain"
+        },
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "Language model initialized: gemini-2.5-flash\n--- Running with a booking request ---\n\n--- DELEGATING TO BOOKING HANDLER ---\nFinal Result A: Booking Handler processed request: 'Book me a flight to London.'. Result: Simulated booking action.\n\n--- Running with an info request ---\n\n--- DELEGATING TO INFO HANDLER ---\nFinal Result B: Info Handler processed request: 'What is the capital of Italy?'. Result: Simulated information retrieval.\n\n--- Running with an unclear request ---\n\n--- DELEGATING TO INFO HANDLER ---\nFinal Result C: Info Handler processed request: 'Tell me about quantum physics.'. Result: Simulated information retrieval.\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    }
+  ]
+}
