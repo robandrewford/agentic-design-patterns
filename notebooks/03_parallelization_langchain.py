@@ -14,11 +14,16 @@ def _():
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.output_parsers import StrOutputParser
     from langchain_core.runnables import Runnable, RunnableParallel, RunnablePassthrough
+    
+    # Import the OpenRouter utility
+    from utils import get_openrouter_model
 
     # --- Configuration ---
-    # Ensure your API key environment variable is set (e.g., OPENAI_API_KEY)
+    # Use the utility to get the OpenRouter-configured model
     try:
-        llm: Optional[ChatOpenAI] = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+        # Using a model known to work with the free key from previous steps
+        # Can be changed to other models as needed
+        llm: Optional[ChatOpenAI] = get_openrouter_model(model_name="mistralai/mistral-7b-instruct:free") 
         if llm:
             print(f"Language model initialized: {llm.model_name}")
     except Exception as e:
