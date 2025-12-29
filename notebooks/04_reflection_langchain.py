@@ -9,22 +9,21 @@ def _():
     import os
     import sys
     import asyncio
-    from langchain_openai import ChatOpenAI
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.output_parsers import StrOutputParser
     from langchain_core.runnables import RunnablePassthrough
+    
+    # Use utils for OpenRouter
+    from utils import get_openrouter_model
 
     # --- Configuration ---
-    # Ensure your API key environment variable is set (e.g., OPENAI_API_KEY)
     try:
-        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+        llm = get_openrouter_model(model_name="google/gemini-3-flash-preview", temperature=0.7)
         print(f"Language model initialized: {llm.model_name}")
     except Exception as e:
         print(f"Error initializing language model: {e}", file=sys.stderr)
-        print("Please ensure your OPENAI_API_KEY is set correctly.", file=sys.stderr)
-        sys.exit(1) # Exit if the LLM cannot be initialized
-
-
+        llm = None
+        
     # --- Define Chain Components ---
 
     # 1. Initial Generation: Creates the first draft of the product description.

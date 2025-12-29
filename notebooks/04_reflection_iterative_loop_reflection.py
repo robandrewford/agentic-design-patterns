@@ -7,28 +7,29 @@ app = marimo.App()
 @app.cell
 def _():
     import os
-    from dotenv import load_dotenv
-    from langchain_openai import ChatOpenAI
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.messages import SystemMessage, HumanMessage
+    
+    # Use utils for OpenRouter
+    from utils import get_openrouter_model
 
     # --- Configuration ---
-    # Load environment variables from .env file (for OPENAI_API_KEY)
-    load_dotenv()
-
-    # Check if the API key is set
-    if not os.getenv("OPENAI_API_KEY"):
-        raise ValueError("OPENAI_API_KEY not found in .env file. Please add it.")
-
-    # Initialize the Chat LLM. We use a powerful model like gpt-4o for better reasoning.
-    # A lower temperature is used for more deterministic and focused outputs.
-    llm = ChatOpenAI(model="gpt-4o", temperature=0.1)
+    # Initialize the Chat LLM via OpenRouter
+    try:
+        llm = get_openrouter_model(model_name="google/gemini-3-flash-preview", temperature=0.1)
+        print(f"Language model initialized: {llm.model_name}")
+    except Exception as e:
+        print(f"Error initializing language model: {e}")
+        llm = None
 
 
     def run_reflection_loop():
         """
         Demonstrates a multi-step AI reflection loop to progressively improve a Python function.
         """
+        if not llm:
+            print("LLM not initialized. Exiting.")
+            return
 
         # --- The Core Task ---
         task_prompt = """
