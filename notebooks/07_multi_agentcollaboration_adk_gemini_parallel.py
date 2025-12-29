@@ -15,7 +15,7 @@ def _():
     # Define the individual agents that will run in parallel
     weather_fetcher = Agent(
         name="weather_fetcher",
-        model="gemini-2.0-flash-exp",
+        model="google/gemini-3-flash-preview",
         instruction="Fetch the weather for the given location and return only the weather report.",
         output_key="weather_data"  # The result will be stored in session.state["weather_data"]
     )

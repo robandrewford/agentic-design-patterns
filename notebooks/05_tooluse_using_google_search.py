@@ -5,53 +5,53 @@ app = marimo.App()
 
 
 @app.cell
-def _(ADKAgent):
-    from google.adk.agents import Agent
-    from google.adk.runners import Runner
-    from google.adk.sessions import InMemorySessionService
-    from google.adk.tools import google_search
-    from google.genai import types
-    import nest_asyncio
+def _():
     import asyncio
+    import nest_asyncio
+    from langgraph.prebuilt import create_react_agent
+    from langchain_core.tools import tool
+    from langchain_core.messages import HumanMessage
+    
+    from utils import get_openrouter_model
 
-    # Define variables required for Session setup and Agent execution
-    APP_NAME="Google Search_agent"
-    USER_ID="user1234"
-    SESSION_ID="1234"
+    # --- Tool Definition (Simulating Google Search) ---
+    @tool
+    def google_search(query: str) -> str:
+        """
+        Performs a Google Search to answer questions.
+        """
+        print(f"\n--- 🔍 Google Search (Simulated) Called: '{query}' ---")
+        return f"Start of search result for '{query}': Recent AI news involves major updates from Google (Gemini 2.0), OpenAI (Sora), and Anthropic. Models are getting faster and multimodal."
 
-
-    # Define Agent with access to search tool
-    root_agent = ADKAgent(
-       name="basic_search_agent",
-       model="gemini-2.0-flash-exp",
-       description="Agent to answer questions using Google Search.",
-       instruction="I can answer your questions by searching the internet. Just ask me anything!",
-       tools=[google_search] # Google Search is a pre-built tool to perform Google searches.
-    )
-
-    # Agent Interaction
-    async def call_agent(query):
-       """
-       Helper function to call the agent with a query.
-       """
-
-       # Session and Runner
-       session_service = InMemorySessionService()
-       session = await session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID)
-       runner = Runner(agent=root_agent, app_name=APP_NAME, session_service=session_service)
-
-       content = types.Content(role='user', parts=[types.Part(text=query)])
-       events = runner.run(user_id=USER_ID, session_id=SESSION_ID, new_message=content)
+    # --- Configuration ---
+    try:
+        llm = get_openrouter_model(model_name="google/gemini-3-flash-preview")
+        print(f"Language model initialized: {llm.model_name}")
+    except Exception as e:
+        print(f"Error initializing language model: {e}")
+        llm = None
 
 
-       for event in events:
-           if event.is_final_response():
-               final_response = event.content.parts[0].text
-               print("Agent Response: ", final_response)
+    async def main():
+        if not llm:
+            return
 
-    nest_asyncio.apply()
+        tools = [google_search]
+        
+        # LangGraph Agent
+        graph = create_react_agent(llm, tools=tools, prompt="You are a helpful assistant. Use the google_search tool to answer questions.")
 
-    asyncio.run(call_agent("what's the latest ai news?"))
+        print("\n--- Running Google Search Agent (Simulated/LangGraph) ---")
+        try:
+            inputs = {"messages": [HumanMessage(content="what's the latest ai news?")]}
+            result = await graph.ainvoke(inputs)
+            print(f"\nAgent Response: {result['messages'][-1].content}")
+        except Exception as e:
+            print(f"Error: {e}")
+
+    if __name__ == "__main__":
+        nest_asyncio.apply()
+        asyncio.run(main())
     return
 
 

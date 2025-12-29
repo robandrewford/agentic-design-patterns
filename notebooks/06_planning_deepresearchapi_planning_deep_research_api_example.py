@@ -6,87 +6,92 @@ app = marimo.App()
 
 @app.cell
 def _():
+    import os
     from openai import OpenAI
+    from dotenv import load_dotenv
 
-    # Initialize the client with your API key
-    client = OpenAI(api_key="YOUR_OPENAI_API_KEY")
+    # Load environment variables
+    load_dotenv()
+    api_key = os.getenv("OPENROUTER_API_KEY")
 
-    # Define the agent's role and the user's research question
-    system_message = """You are a professional researcher preparing a structured, data-driven report.
-    Focus on data-rich insights, use reliable sources, and include inline citations."""
-    user_query = "Research the economic impact of semaglutide on global healthcare systems."
+    if api_key:
+        # Initialize the client with OpenRouter configuration
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key,
+        )
 
-    # Create the Deep Research API call
-    response = client.responses.create(
-      model="o3-deep-research-2025-06-26",
-      input=[
-        {
-          "role": "developer",
-          "content": [{"type": "input_text", "text": system_message}]
-        },
-        {
-          "role": "user",
-          "content": [{"type": "input_text", "text": user_query}]
-        }
-      ],
-      reasoning={"summary": "auto"},
-      tools=[{"type": "web_search_preview"}]
-    )
+        # Restore the original research-focused query
+        system_message = """You are a professional researcher preparing a structured, data-driven report.
+        Focus on data-rich insights, use reliable sources, and include inline citations."""
+        user_query = "Research the economic impact of semaglutide on global healthcare systems."
 
-    # Access and print the final report from the response
-    final_report = response.output[-1].content[0].text
-    print(final_report)
+        # Create the Deep Research API call using OpenRouter's model identifier
+        try:
+            print(f"## Requesting Deep Research from OpenRouter (model: openai/o4-mini-deep-research) ##", flush=True)
+            print("Note: Deep Research models can take multiple minutes as they perform real-time web searches...", flush=True)
+            
+            # This is a beta API on OpenRouter
+            response = client.responses.create(
+              model="openai/o4-mini-deep-research",
+              input=[
+                {
+                  "role": "developer",
+                  "content": [{"type": "input_text", "text": system_message}]
+                },
+                {
+                  "role": "user",
+                  "content": [{"type": "input_text", "text": user_query}]
+                }
+              ],
+              reasoning={"summary": "auto"},
+              tools=[{"type": "web_search_preview"}]
+            )
 
-    # --- ACCESS INLINE CITATIONS AND METADATA ---
-    print("--- CITATIONS ---")
-    annotations = response.output[-1].content[0].annotations
+            print("## Response received from OpenRouter ##", flush=True)
+            if response.output:
+                final_report = response.output[-1].content[0].text
+                print("\n--- FINAL REPORT ---\n")
+                print(final_report)
 
-    if not annotations:
-        print("No annotations found in the report.")
+                # --- ACCESS INLINE CITATIONS AND METADATA ---
+                print("\n--- CITATIONS ---")
+                annotations = response.output[-1].content[0].annotations
+
+                if not annotations:
+                    print("No annotations found in the report.")
+                else:
+                    for i, citation in enumerate(annotations):
+                        cited_text = final_report[citation.start_index:citation.end_index]
+                        print(f"Citation {i+1}:")
+                        print(f"  Cited Text: {cited_text}")
+                        print(f"  Title: {citation.title}")
+                        print(f"  URL: {citation.url}")
+                        print(f"  Location: chars {citation.start_index}–{citation.end_index}")
+                
+                print("\n" + "="*50 + "\n")
+
+                # --- INSPECT INTERMEDIATE STEPS ---
+                print("--- INTERMEDIATE STEPS ---")
+                reasoning_steps = [item for item in response.output if item.type == "reasoning"]
+                if reasoning_steps:
+                    print(f"\n[Found reasoning steps]")
+                    for rs in reasoning_steps:
+                        for summary_part in rs.summary:
+                            print(f"  - {summary_part.text}")
+                
+                search_steps = [item for item in response.output if item.type == "web_search_call"]
+                if search_steps:
+                    print(f"\n[Found search calls]")
+                    for ss in search_steps:
+                        print(f"  Query: '{ss.action['query']}' | Status: {ss.status}")
+
+            else:
+                print("No output received from the model.")
+        except Exception as e:
+            print(f"Error during Deep Research API call: {e}")
     else:
-        for i, citation in enumerate(annotations):
-            # The text span the citation refers to
-            cited_text = final_report[citation.start_index:citation.end_index]
-
-            print(f"Citation {i+1}:")
-            print(f"  Cited Text: {cited_text}")
-            print(f"  Title: {citation.title}")
-            print(f"  URL: {citation.url}")
-            print(f"  Location: chars {citation.start_index}–{citation.end_index}")
-    print("\n" + "="*50 + "\n")
-
-
-    # --- INSPECT INTERMEDIATE STEPS ---
-    print("--- INTERMEDIATE STEPS ---")
-
-    # 1. Reasoning Steps: Internal plans and summaries generated by the model.
-    try:
-        reasoning_step = next(item for item in response.output if item.type == "reasoning")
-        print("\n[Found a Reasoning Step]")
-        for summary_part in reasoning_step.summary:
-            print(f"  - {summary_part.text}")
-    except StopIteration:
-        print("\nNo reasoning steps found.")
-
-    # 2. Web Search Calls: The exact search queries the agent executed.
-    try:
-        search_step = next(item for item in response.output if item.type == "web_search_call")
-        print("\n[Found a Web Search Call]")
-        print(f"  Query Executed: '{search_step.action['query']}'")
-        print(f"  Status: {search_step.status}")
-    except StopIteration:
-        print("\nNo web search steps found.")
-
-    # 3. Code Execution: Any code run by the agent using the code interpreter.
-    try:
-        code_step = next(item for item in response.output if item.type == "code_interpreter_call")
-        print("\n[Found a Code Execution Step]")
-        print("  Code Input:")
-        print(f"  ```python\n{code_step.input}\n  ```")
-        print("  Code Output:")
-        print(f"  {code_step.output}")
-    except StopIteration:
-        print("\nNo code execution steps found.")
+        print("OPENROUTER_API_KEY not found in .env file.")
     return
 
 

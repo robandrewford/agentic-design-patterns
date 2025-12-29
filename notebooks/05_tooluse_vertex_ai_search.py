@@ -7,95 +7,67 @@ app = marimo.App()
 @app.cell
 def _():
     import asyncio
-    from google.genai import types
-    from google.adk import agents
-    from google.adk.runners import Runner
-    from google.adk.sessions import InMemorySessionService
-    import os
+    import nest_asyncio
+    from langgraph.prebuilt import create_react_agent
+    from langchain_core.tools import tool
+    from langchain_core.messages import HumanMessage
+    
+    from utils import get_openrouter_model
+
+    # --- Tool Definition (Simulating Vertex AI Search / RAG) ---
+    @tool
+    def search_q2_strategy_docs(query: str) -> str:
+        """
+        Searches the Q2 Strategy Documents for relevant information.
+        """
+        print(f"\n--- 📄 Vertex AI Search (Simulated) Called: '{query}' ---")
+        # Simulate RAG retrieval
+        if "safety" in query.lower():
+            return "Content from Doc 'Safety_Procedures_Lab_X.pdf': All personnel must wear goggles. Emergency exits are located in the north wing."
+        elif "strategy" in query.lower():
+            return "Content from Doc 'Q2_Strategy.pdf': Our main goal is to increase AI adoption by 20%. Key focus areas: integration and efficiency."
+        else:
+            return "No relevant documents found in the datastore."
 
     # --- Configuration ---
-    # Ensure you have set your GOOGLE_API_KEY and DATASTORE_ID environment variables
-    # For example:
-    # os.environ["GOOGLE_API_KEY"] = "YOUR_API_KEY"
-    # os.environ["DATASTORE_ID"] = "YOUR_DATASTORE_ID"
+    try:
+        # Using a model to synthesize the "retrieved" info
+        llm = get_openrouter_model(model_name="google/gemini-3-flash-preview")
+        print(f"Language model initialized: {llm.model_name}")
+    except Exception as e:
+        print(f"Error initializing language model: {e}")
+        llm = None
 
-    DATASTORE_ID = os.environ.get("DATASTORE_ID")
 
-    # --- Application Constants ---
-    APP_NAME = "vsearch_app"
-    USER_ID = "user_123"  # Example User ID
-    SESSION_ID = "session_456" # Example Session ID
+    async def main():
+        if not llm:
+            return
 
-    # --- Agent Definition (Updated with the newer model from the guide) ---
-    vsearch_agent = agents.VSearchAgent(
-        name="q2_strategy_vsearch_agent",
-        description="Answers questions about Q2 strategy documents using Vertex AI Search.",
-        model="gemini-2.0-flash-exp", # Updated model based on the guide's examples
-        datastore_id=DATASTORE_ID,
-        model_parameters={"temperature": 0.0}
-    )
+        tools = [search_q2_strategy_docs]
+        
+        # LangGraph Agent
+        graph = create_react_agent(llm, tools=tools, prompt="You are a helpful assistant. Answer questions using the available search tools for internal documents.")
 
-    # --- Runner and Session Initialization ---
-    runner = Runner(
-        agent=vsearch_agent,
-        app_name=APP_NAME,
-        session_service=InMemorySessionService(),
-    )
-
-    # --- Agent Invocation Logic ---
-    async def call_vsearch_agent_async(query: str):
-        """Initializes a session and streams the agent's response."""
-        print(f"User: {query}")
-        print("Agent: ", end="", flush=True)
-
-        try:
-            # Construct the message content correctly
-            content = types.Content(role='user', parts=[types.Part(text=query)])
-
-            # Process events as they arrive from the asynchronous runner
-            async for event in runner.run_async(
-                user_id=USER_ID,
-                session_id=SESSION_ID,
-                new_message=content
-            ):
-                # For token-by-token streaming of the response text
-                if hasattr(event, 'content_part_delta') and event.content_part_delta:
-                    print(event.content_part_delta.text, end="", flush=True)
-
-                # Process the final response and its associated metadata
-                if event.is_final_response():
-                    print() # Newline after the streaming response
-                    if event.grounding_metadata:
-                        print(f"  (Source Attributions: {len(event.grounding_metadata.grounding_attributions)} sources found)")
-                    else:
-                        print("  (No grounding metadata found)")
-                    print("-" * 30)
-
-        except Exception as e:
-            print(f"\nAn error occurred: {e}")
-            print("Please ensure your datastore ID is correct and that the service account has the necessary permissions.")
-            print("-" * 30)
-
-    # --- Run Example ---
-    async def run_vsearch_example():
-        # Replace with a question relevant to YOUR datastore content
-        await call_vsearch_agent_async("Summarize the main points about the Q2 strategy document.")
-        await call_vsearch_agent_async("What safety procedures are mentioned for lab X?")
-
-    # --- Execution ---
-    if __name__ == "__main__":
-        if not DATASTORE_ID:
-            print("Error: DATASTORE_ID environment variable is not set.")
-        else:
+        print("\n--- Running Vertex AI Search Agent (Simulated/LangGraph) ---")
+        
+        queries = [
+            "Summarize the main points about the Q2 strategy document.",
+            "What safety procedures are mentioned for lab X?"
+        ]
+        
+        for q in queries:
+            print(f"\nQuery: {q}")
             try:
-                asyncio.run(run_vsearch_example())
-            except RuntimeError as e:
-                # This handles cases where asyncio.run is called in an environment
-                # that already has a running event loop (like a Jupyter notebook).
-                if "cannot be called from a running event loop" in str(e):
-                    print("Skipping execution in a running event loop. Please run this script directly.")
-                else:
-                    raise e
+                inputs = {"messages": [HumanMessage(content=q)]}
+                result = await graph.ainvoke(inputs)
+                print(f"Agent Response: {result['messages'][-1].content}")
+            except Exception as e:
+                print(f"Error: {e}")
+
+
+    if __name__ == "__main__":
+        nest_asyncio.apply()
+        asyncio.run(main())
     return
 
 

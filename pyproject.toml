@@ -5,9 +5,12 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "crewai>=1.6.1",
     "gitignore>=0.0.8",
     "google-adk>=1.21.0",
+    "langchain>=1.2.0",
     "langchain-openai>=1.1.6",
+    "litellm>=1.80.11",
     "marimo>=0.18.4",
     "nest-asyncio>=1.6.0",
     "ruff>=0.14.10",
