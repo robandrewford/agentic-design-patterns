@@ -23,7 +23,7 @@ def _():
     try:
         # Using a model known to work with the free key from previous steps
         # Can be changed to other models as needed
-        llm: Optional[ChatOpenAI] = get_openrouter_model(model_name="mistralai/mistral-7b-instruct:free") 
+        llm: Optional[ChatOpenAI] = get_openrouter_model(model_name="google/gemini-3-flash-preview") 
         if llm:
             print(f"Language model initialized: {llm.model_name}")
     except Exception as e:
