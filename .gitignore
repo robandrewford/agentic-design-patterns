@@ -1,0 +1,33 @@
+# Environment and Secrets
+.env
+.venv/
+.python-version
+
+# Python / Build
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+build/
+dist/
+*.egg-info/
+
+# Marimo
+__marimo__/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large / Generated Files
+*.pdf
+*.log
